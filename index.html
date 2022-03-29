@@ -1,0 +1,180 @@
+<html>
+  <head>
+    <title>three.js</title>
+    <style>
+      html, body {
+        width: 100%; height: 100%;
+        margin: 0; padding: 0;
+        overflow: hidden;
+        background-color: #D8D3CC;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      canvas#three {
+        display: block;
+        box-sizing: border-box;
+        position: fixed;
+        top: 0; left: 0; bottom: 0; right: 0;
+        width: 100%; height: 100%;
+        pointer-events: none;
+        transition: all 1.5s ease-in;
+        opacity: 0
+      }
+      canvas#three.active {
+        opacity: 1;
+      }
+      h1 {
+        font-weight: 700;
+        margin: auto;
+        font-size: 10em;
+        line-height: 1em;
+        z-index: 1;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-user-drag: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="three"></canvas>
+    <h1>three</h1>
+    <!-- https://threejs.org/manual/#en/fundamentals -->
+    <script type="module">
+      import * as THREE from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
+      // import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/GLTFLoader.js';
+
+      function draw() {
+        // Specify our HTML canvas
+        const canvas = document.querySelector('#three');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+
+        // Number of objects
+        const items = 1;
+
+        // Create a camera
+        const fov = 75; // field of view (in degrees)
+        const aspect = (window.innerWidth / window.innerHeight) || 2; // aspect ratio
+        const near = 1; // near plane
+        const far = 100; // far plane
+        const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+        camera.position.set(0, 0, 5); // x, y, z --> camera is +5 on the z-axis
+
+        // Set our scene
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xD8D3CC);
+
+        // Create an ambient light
+        {
+          const color = 0xFFFFFF;
+          const intensity = .6;
+          const ambientLight = new THREE.AmbientLight(color, intensity);
+          scene.add(ambientLight);
+        }
+        // Create a directional light
+        {
+          const color = 0xFFFFFF;
+          const intensity = .5;
+          const dirLight = new THREE.DirectionalLight(color, intensity);
+          dirLight.position.set(0, 0, 5).normalize();
+          scene.add(dirLight);
+        }
+
+        // Objects container
+        const shapes = [];
+
+        // Define our shape
+        const geometry = new THREE.BoxGeometry(2, 2, 2); // width, height, depth
+
+        // Define a material and set its color
+        const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xFFFFFF, shininess: 30 });
+
+        // OR add a texture
+        //const texture = new THREE.TextureLoader().load('');
+        //const material = new THREE.MeshBasicMaterial({ map: texture });
+
+        // Generate our objects ('Mesh')
+        for (let i = 0; i < items; i++) {
+          shapes[i] = makeInstance(geometry, material, i, items);
+        }
+
+        // Create an objet ('Mesh') and add it to the scene
+        function makeInstance(geometry, material, ndx, tot) {
+          const shape = new THREE.Mesh(geometry, material);
+          scene.add(shape);
+
+          const yPos = ndx - ((tot - 1) / 2);
+          const xPos = yPos * (window.innerWidth / window.innerHeight);
+          shape.position.set(xPos, yPos, 0); // x, y, z
+
+          const scale = yPos === 0 ? 1 : Math.abs(.75 / yPos);
+          shape.scale.set(scale, scale, scale); // x, y, z
+
+          return shape;
+        }
+
+        // Or load a GLTF asset
+        // const gltfLoader = new GLTFLoader();
+        // const url = './planet.gltf';
+        // gltfLoader.load(url, (gltf) => {
+        //   const shape = gltf.scene;
+        //   scene.add(shape);
+        //   shape.scale.set(20, 20, 20);
+
+        //   shapes[0] = shape;
+        // });
+
+        // Check if we need to resize our scene (window size and pixels density)
+        function resizeRendererToDisplaySize(renderer) {
+          const canvas = renderer.domElement;
+          const pixelRatio = window.devicePixelRatio;
+          const width  = canvas.clientWidth  * pixelRatio | 0;
+          const height = canvas.clientHeight * pixelRatio | 0;
+          const needResize = canvas.width !== width || canvas.height !== height;
+          if (needResize) { renderer.setSize(width, height, false); }
+          return needResize;
+        }
+
+        // Animate our scene
+        function render(time) {
+          time *= .001;
+
+          // Resize the scene (if needed)
+          if (resizeRendererToDisplaySize(renderer)) {
+            const canvas = renderer.domElement;
+            camera.aspect = canvas.clientWidth / canvas.clientHeight;
+            camera.updateProjectionMatrix();
+          }
+
+          // Animate the shapes
+          shapes.forEach((shape, ndx) => {
+            const speed = .75 - Math.abs((ndx - (items - 1) / 2) * .1);
+            const rot = time * speed;
+            shape.rotation.x = rot;
+            shape.rotation.y = rot;
+          });
+
+          // Render the scene
+          renderer.render(scene, camera);
+          // Loop the animation request
+          requestAnimationFrame(render);
+        }
+        // Call it once to start the loop
+        requestAnimationFrame(render);
+
+        // Handle resize
+        window.addEventListener('resize', function() {
+          const aspect = (window.innerWidth / window.innerHeight) || 2;
+          camera.aspect = aspect;
+          camera.updateProjectionMatrix();
+        });
+
+        // Fade it in
+        canvas.classList.add('active');
+      }
+      // Initiate the canvas
+      draw();
+    </script>
+  </body>
+</html>
